@@ -1,0 +1,22 @@
+services:
+  web1:
+    image: ubuntu:24.04
+    container_name: web1
+    ports:
+      - "2221:22"
+    command: >
+      bash -c "apt-get update &&
+      apt-get install -y openssh-server python3 &&
+      mkdir -p /run/sshd &&
+      /usr/sbin/sshd -D"
+
+  web2:
+    image: ubuntu:24.04
+    container_name: web2
+    ports:
+      - "2222:22"
+    command: >
+      bash -c "apt-get update &&
+      apt-get install -y openssh-server python3 &&
+      mkdir -p /run/sshd &&
+      /usr/sbin/sshd -D"
