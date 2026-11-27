@@ -1,0 +1,16 @@
+- name: Display environment information
+  hosts: web
+  gather_facts: true
+
+  tasks:
+    - name: Display application environment
+      ansible.builtin.debug:
+        msg: "Environment: {{ app_environment }}"
+
+    - name: Display application port
+      ansible.builtin.debug:
+        msg: "Application port: {{ app_port }}"
+
+    - name: Display operating system
+      ansible.builtin.debug:
+        msg: "Operating system: {{ ansible_facts['distribution'] }}"
