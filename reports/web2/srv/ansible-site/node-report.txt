@@ -1,0 +1,3 @@
+host=web2
+distribution=Ubuntu
+banner_sha256=83fd34f2ae8c29943fb594f45fdedf7152b9199e9b0ebfd353cbcd7c3b7f7980

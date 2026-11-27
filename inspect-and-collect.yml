@@ -1,0 +1,31 @@
+- name: Inspect the banner and prepare host reports
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Inspect the managed banner
+      ansible.builtin.stat:
+        path: /srv/ansible-site/banner.txt
+        checksum_algorithm: sha256
+      register: banner_info
+
+    - name: Display banner metadata
+      ansible.builtin.debug:
+        var: banner_info.stat
+
+    - name: Create a report on each managed host
+      become: true
+      ansible.builtin.copy:
+        dest: /srv/ansible-site/node-report.txt
+        content: |
+          host={{ inventory_hostname }}
+          distribution={{ ansible_facts['distribution'] }}
+          banner_sha256={{ banner_info.stat.checksum }}
+        owner: root
+        group: automation
+        mode: "0640"
+    - name: Fetch reports from managed hosts
+      ansible.builtin.fetch:
+        src: /srv/ansible-site/node-report.txt
+        dest: /mnt/d/kritika/ansible-lab/reports/
+        flat: false
