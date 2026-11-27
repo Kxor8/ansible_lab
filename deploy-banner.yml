@@ -1,0 +1,21 @@
+- name: Distribute the managed banner
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Create the managed site directory
+      ansible.builtin.file:
+        path: /srv/ansible-site
+        state: directory
+        owner: root
+        group: automation
+        mode: "0750"
+
+    - name: Copy the banner to managed hosts
+      ansible.builtin.copy:
+        src: /mnt/d/kritika/ansible-lab/site-banner.txt
+        dest: /srv/ansible-site/banner.txt
+        owner: root
+        group: automation
+        mode: "0640"
