@@ -1,0 +1,112 @@
+---
+- name: Create maintenance policy directory
+  ansible.builtin.file:
+    path: /home/automation/maintenance-policy
+    state: directory
+    owner: automation
+    group: automation
+    mode: '0750'
+
+- name: Create maintenance enabled marker
+  ansible.builtin.copy:
+    content: "Maintenance is enabled\n"
+    dest: /home/automation/maintenance-policy/enabled.txt
+    owner: automation
+    group: automation
+    mode: '0640'
+  when:
+    - maintenance_enabled | bool
+    - ansible_facts.os_family == "Debian"
+
+- name: Remove maintenance marker when disabled
+  ansible.builtin.file:
+    path: /home/automation/maintenance-policy/enabled.txt
+    state: absent
+  when: >
+    not (maintenance_enabled | bool) or
+    ansible_facts.os_family != "Debian"
+
+- name: Create maintenance checks directory
+  ansible.builtin.file:
+    path: /home/automation/maintenance-policy/checks
+    state: directory
+    owner: automation
+    group: automation
+    mode: '0750'
+  when:
+    - maintenance_enabled | bool
+    - ansible_facts.os_family == "Debian"
+
+- name: Create maintenance check files using a loop
+  ansible.builtin.copy:
+    content: |
+      Host: {{ inventory_hostname }}
+      Check: {{ item.name }}
+      Purpose: {{ item.purpose }}
+    dest: "/home/automation/maintenance-policy/checks/{{ item.name }}.txt"
+    owner: automation
+    group: automation
+    mode: '0640'
+  loop: "{{ maintenance_checks }}"
+  when:
+    - maintenance_enabled | bool
+    - ansible_facts.os_family == "Debian"
+
+- name: Remove checks directory when maintenance is disabled
+  ansible.builtin.file:
+    path: /home/automation/maintenance-policy/checks
+    state: absent
+  when: >
+    not (maintenance_enabled | bool) or
+    ansible_facts.os_family != "Debian"
+
+- name: Check whether approval file exists
+  ansible.builtin.stat:
+    path: /home/automation/maintenance-approved
+  register: approval_info
+
+- name: Create approval marker when approval exists
+  ansible.builtin.copy:
+    content: "Maintenance approved\n"
+    dest: /home/automation/maintenance-policy/approved.txt
+    owner: automation
+    group: automation
+    mode: '0640'
+  when: approval_info.stat.exists
+
+- name: Remove approval marker when approval is missing
+  ansible.builtin.file:
+    path: /home/automation/maintenance-policy/approved.txt
+    state: absent
+  when: not approval_info.stat.exists
+- name: Create website document root
+  ansible.builtin.file:
+    path: /var/www/role-site
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy website page from template
+  ansible.builtin.template:
+    src: page.txt.j2
+    dest: /var/www/role-site/index.html
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy and validate Nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: '/usr/sbin/nginx -t -c %s'
+  notify: Reload managed site
+
+- name: Ensure Nginx is running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

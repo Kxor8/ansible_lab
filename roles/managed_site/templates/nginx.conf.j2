@@ -1,0 +1,19 @@
+events {}
+
+http {
+    server_tokens off;
+
+    server {
+        listen {{ site_port }};
+        root /var/www/role-site;
+        index index.html;
+
+        add_header X-Environment "{{ site_environment | upper }}" always;
+
+{% if site_maintenance %}
+        add_header X-Maintenance "enabled" always;
+{% else %}
+        add_header X-Maintenance "disabled" always;
+{% endif %}
+    }
+}

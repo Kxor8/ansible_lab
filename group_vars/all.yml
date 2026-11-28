@@ -1,0 +1,9 @@
+maintenance_checks:
+  - name: disk
+    purpose: Inspect disk space
+
+  - name: logs
+    purpose: Inspect application logs
+
+  - name: packages
+    purpose: Inspect package state

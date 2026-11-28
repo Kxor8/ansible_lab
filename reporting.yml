@@ -1,0 +1,33 @@
+---
+- name: Manage scheduled host reports
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    report_phase: verified
+
+  tasks:
+    - name: Create report directory
+      ansible.builtin.file:
+        path: /home/automation/reporting
+        state: directory
+        owner: automation
+        group: automation
+        mode: "0750"
+
+    - name: Deploy report script
+      ansible.builtin.copy:
+        src: files/host-report.sh
+        dest: /home/automation/reporting/host-report.sh
+        owner: automation
+        group: automation
+        mode: "0750"
+
+    - name: Schedule report every minute
+      ansible.builtin.cron:
+        name: ansible-host-report
+        user: automation
+        minute: "*"
+        job: /home/automation/reporting/host-report.sh {{ report_phase }}
+
