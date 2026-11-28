@@ -1,0 +1,48 @@
+---
+- name: Inspect maintenance inputs safely
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Read the managed input with a space-safe argument list
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/cat
+          - /home/automation/maintenance input.txt
+      register: input_result
+      changed_when: false
+
+    - name: Retain the inspected input in a managed record
+      ansible.builtin.copy:
+        dest: /home/automation/command-result.txt
+        content: "{{ input_result.stdout }}\n"
+        owner: automation
+        group: automation
+        mode: "0640"
+
+    - name: Run the supplied controller script once per target report
+      ansible.builtin.script:
+        cmd: /mnt/d/kritika/ansible-lab/scripts/host-maintenance.sh 'Maintenance checked'
+        creates: /home/automation/maintenance-run/report.txt
+      register: maintenance_result
+      failed_when: maintenance_result.rc is defined and maintenance_result.rc != 0
+
+    - name: Count managed input lines with explicit pipeline failure propagation
+      ansible.builtin.shell: |
+        set -o pipefail
+        cat '/home/automation/maintenance input.txt' | wc -l
+      args:
+        executable: /bin/bash
+      register: line_result
+      changed_when: false
+      failed_when: line_result.rc != 0 or (line_result.stdout | trim) != '1'
+
+    - name: Store a per-target receipt on the controller
+      ansible.builtin.copy:
+        dest: "/mnt/d/kritika/ansible-lab/receipts/{{ inventory_hostname }}.txt"
+        content: |
+          host={{ inventory_hostname }}
+          input_lines={{ line_result.stdout | trim }}
+        mode: "0640"
+      delegate_to: localhost
+      become: false
